@@ -1,16 +1,38 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
-const upsellJsonTpl = `{"country":"CH","language":"en","cabinClass":"ECONOMY","passengerCount":{"ADULT":1,"CHILD":0,"INFANT":0},"requestedConnections":[{"origin":{"airport":{"code":"{{Origin.AirportCode}}"}},"destination":{"airport":{"code":"{{Destination.AirportCode}}"}},"departureDate":"{{Origin.DepartureDate}}","fareBasis":"ASRHU","segments":[{"marketingCarrier":"KL","marketingFlightNumber":"{{Origin.FlightNumber}}","origin":{"code":"{{Origin.AirportCode}}"},"destination":{"code":"{{Destination.AirportCode}}"},"departureDateTime":"{{Origin.DepartureTime}}","sellingClass":"A"}]},{"origin":{"airport":{"code":"{{Destination.AirportCode}}"}},"destination":{"airport":{"code":"{{Origin.AirportCode}}"}},"departureDate":"{{Destination.DepartureTime}}","fareBasis":"FWKHU","segments":[{"marketingCarrier":"KL","marketingFlightNumber":"{{Destination.FlightNumber}}","origin":{"code":"{{Destination.AirportCode}}"},"destination":{"code":"{{Origin.AirportCode}}"},"departureDateTime":"{{Destination.DepartureTime}}","sellingClass":"F"}]}],"localeStringDateTime":"en","localeStringNumber":"de-CH"}`
+const (
+	departureDateFormat = "2006-01-02"
+	BUDFlightNumber     = 1972
+	AMSFlightNumber     = 1981
+)
 
 type FlightDetails struct {
-	AirportCode   string    //AMS
-	FlightNumber  int32     //1981
-	DepartureTime time.Time //2018-06-21T20:55:00
+	AirportCode  string
+	FlightNumber int32
+	Date         time.Time
+}
+
+func (f *FlightDetails) DepartureDateTime() string {
+	var time string
+	if f.AirportCode == "BUD" {
+		time = "T06:30:00"
+	} else if f.AirportCode == "AMS" {
+		time = "T20:55:00"
+	}
+	return string(f.Date.Format(departureDateFormat) + time)
+}
+
+func (f *FlightDetails) DepartureDate() string {
+	return f.Date.Format(departureDateFormat)
 }
 
 type FlightOffering struct {
@@ -19,9 +41,24 @@ type FlightOffering struct {
 }
 
 func main() {
+
 	travelDays := getDayOfWeek(time.Thursday, 23)
-	for _, d := range travelDays {
-		fmt.Println(d)
+
+	for _, t := range travelDays {
+		origin := FlightDetails{
+			AirportCode:  "BUD",
+			FlightNumber: BUDFlightNumber,
+			Date:         t,
+		}
+
+		destination := FlightDetails{
+			AirportCode:  "AMS",
+			FlightNumber: AMSFlightNumber,
+			Date:         t,
+		}
+
+		getOffers(origin, destination)
+		return
 	}
 }
 
@@ -29,7 +66,13 @@ func main() {
 func getDayOfWeek(dayOfWeek time.Weekday, numberOfWeeks int) []time.Time {
 	// first we need to find the next `dayOfWeek`
 	today := time.Now().Weekday()
-	offset := 7 + today - dayOfWeek
+	var offset time.Weekday
+	if today != dayOfWeek {
+		offset = 7 - today + dayOfWeek
+	} else {
+		offset = 0
+	}
+
 	start := time.Now().AddDate(0, 0, int(offset))
 
 	res := make([]time.Time, 0, numberOfWeeks)
@@ -40,5 +83,36 @@ func getDayOfWeek(dayOfWeek time.Weekday, numberOfWeeks int) []time.Time {
 	return res
 }
 
-func buildRequestJson() {
+func getOffers(origin, destination FlightDetails) {
+	d := FlightOffering{
+		Origin:      origin,
+		Destination: destination,
+	}
+	t, err := template.ParseFiles("upsell.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+	buf := new(bytes.Buffer)
+	t.Execute(buf, &d)
+	sendAPIRequest(*buf)
+}
+
+func sendAPIRequest(jsonStr bytes.Buffer) {
+	url := "https://www.klm.com/ams/search-web/api/upsell-products?country=CH&language=en&localeStringDateTime=en&localeStringNumber=de-CH"
+	fmt.Println("URL:>", url)
+
+	req, err := http.NewRequest("POST", url, &jsonStr)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 }
