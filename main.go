@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -38,6 +38,24 @@ func (f *FlightDetails) DepartureDate() string {
 type FlightOffering struct {
 	Origin      FlightDetails
 	Destination FlightDetails
+}
+
+type OfferDetails struct {
+	UpsellProducts []struct {
+		Price struct {
+			DisplayPrice           int `json:"displayPrice"`
+			TotalPrice             int `json:"totalPrice"`
+			Accuracy               int `json:"accuracy"`
+			PricePerPassengerTypes []struct {
+				PassengerType string `json:"passengerType"`
+				Fare          int    `json:"fare"`
+				Taxes         int    `json:"taxes"`
+			} `json:"pricePerPassengerTypes"`
+			FlexibilityWaiver bool   `json:"flexibilityWaiver"`
+			Currency          string `json:"currency"`
+			DisplayType       string `json:"displayType"`
+		} `json:"price"`
+	}
 }
 
 func main() {
@@ -110,9 +128,18 @@ func sendAPIRequest(jsonStr bytes.Buffer) {
 		panic(err)
 	}
 	defer resp.Body.Close()
+	//body, _ := ioutil.ReadAll(resp.Body)
 
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	var offerDetails OfferDetails
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&offerDetails)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%+v", offerDetails)
+
+	// fmt.Println("response Status:", resp.Status)
+	// fmt.Println("response Headers:", resp.Header)
+	// fmt.Println("response Body:", string(body))
 }

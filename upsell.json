@@ -1,0 +1,70 @@
+{
+    "country": "CH",
+    "language": "en",
+    "cabinClass": "ECONOMY",
+    "passengerCount": {
+        "ADULT": 1,
+        "CHILD": 0,
+        "INFANT": 0
+    },
+    "requestedConnections": [
+        {
+            "origin": {
+                "airport": {
+                    "code": "{{.Origin.AirportCode}}"
+                }
+            },
+            "destination": {
+                "airport": {
+                    "code": "{{.Destination.AirportCode}}"
+                }
+            },
+            "departureDate": "{{.Origin.DepartureDate}}",
+            "fareBasis": "ASRHU",
+            "segments": [
+                {
+                    "marketingCarrier": "KL",
+                    "marketingFlightNumber": "{{.Origin.FlightNumber}}",
+                    "origin": {
+                        "code": "{{.Origin.AirportCode}}"
+                    },
+                    "destination": {
+                        "code": "{{.Destination.AirportCode}}"
+                    },
+                    "departureDateTime": "{{.Origin.DepartureDateTime}}",
+                    "sellingClass": "A"
+                }
+            ]
+        },
+        {
+            "origin": {
+                "airport": {
+                    "code": "{{.Destination.AirportCode}}"
+                }
+            },
+            "destination": {
+                "airport": {
+                    "code": "{{.Origin.AirportCode}}"
+                }
+            },
+            "departureDate": "{{.Destination.DepartureDate}}",
+            "fareBasis": "FWKHU",
+            "segments": [
+                {
+                    "marketingCarrier": "KL",
+                    "marketingFlightNumber": "{{.Destination.FlightNumber}}",
+                    "origin": {
+                        "code": "{{.Destination.AirportCode}}"
+                    },
+                    "destination": {
+                        "code": "{{.Origin.AirportCode}}"
+                    },
+                    "departureDateTime": "{{.Destination.DepartureDateTime}}",
+                    "sellingClass": "F"
+                }
+            ]
+        }
+    ],
+    "localeStringDateTime": "en",
+    "localeStringNumber": "de-CH"
+}
