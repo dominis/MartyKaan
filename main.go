@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dominis/klmfinder/klm"
+	"github.com/dominis/martykaan/klm"
 )
 
 const (
