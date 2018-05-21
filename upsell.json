@@ -20,7 +20,6 @@
                 }
             },
             "departureDate": "{{.Origin.DepartureDate}}",
-            "fareBasis": "ASRHU",
             "segments": [
                 {
                     "marketingCarrier": "KL",
@@ -31,8 +30,7 @@
                     "destination": {
                         "code": "{{.Destination.AirportCode}}"
                     },
-                    "departureDateTime": "{{.Origin.DepartureDateTime}}",
-                    "sellingClass": "A"
+                    "departureDateTime": "{{.Origin.DepartureDateTime}}"
                 }
             ]
         },
@@ -48,7 +46,6 @@
                 }
             },
             "departureDate": "{{.Destination.DepartureDate}}",
-            "fareBasis": "FWKHU",
             "segments": [
                 {
                     "marketingCarrier": "KL",
@@ -59,8 +56,7 @@
                     "destination": {
                         "code": "{{.Origin.AirportCode}}"
                     },
-                    "departureDateTime": "{{.Destination.DepartureDateTime}}",
-                    "sellingClass": "F"
+                    "departureDateTime": "{{.Destination.DepartureDateTime}}"
                 }
             ]
         }

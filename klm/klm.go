@@ -103,9 +103,9 @@ func sendAPIRequest(jsonStr bytes.Buffer) OfferDetails {
 }
 
 func FindCheapest(offers OfferDetails) int {
-	var lowest int
-	for i, p := range offers.UpsellProducts {
-		if i == 0 {
+	lowest := 0
+	for _, p := range offers.UpsellProducts {
+		if lowest == 0 {
 			lowest = p.Price.DisplayPrice
 		}
 

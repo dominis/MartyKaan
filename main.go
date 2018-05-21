@@ -36,3 +36,18 @@ func main() {
 		fmt.Println("##### Next Date #####")
 	}
 }
+
+func debug() {
+	origin := klm.FlightDetails{
+		AirportCode:  "BUD",
+		FlightNumber: BUDFlightNumber,
+		Date:         time.Date(2018, time.June, 7, 1, 0, 0, 0, time.UTC),
+	}
+	destination := klm.FlightDetails{
+		AirportCode:  "AMS",
+		FlightNumber: AMSFlightNumber,
+		Date:         time.Date(2018, time.June, 21, 1, 0, 0, 0, time.UTC),
+	}
+	klm.GetOffers(origin, destination)
+
+}
