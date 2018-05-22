@@ -36,18 +36,19 @@ func (f *FlightDetails) DepartureDate() string {
 type FlightOffering struct {
 	Origin      FlightDetails
 	Destination FlightDetails
+	Price       float32
 }
 
 type OfferDetails struct {
 	UpsellProducts []struct {
 		Price struct {
-			DisplayPrice           int `json:"displayPrice"`
-			TotalPrice             int `json:"totalPrice"`
-			Accuracy               int `json:"accuracy"`
+			DisplayPrice           float32 `json:"displayPrice"`
+			TotalPrice             float32 `json:"totalPrice"`
+			Accuracy               float32 `json:"accuracy"`
 			PricePerPassengerTypes []struct {
-				PassengerType string `json:"passengerType"`
-				Fare          int    `json:"fare"`
-				Taxes         int    `json:"taxes"`
+				PassengerType string  `json:"passengerType"`
+				Fare          float32 `json:"fare"`
+				Taxes         float32 `json:"taxes"`
 			} `json:"pricePerPassengerTypes"`
 			FlexibilityWaiver bool   `json:"flexibilityWaiver"`
 			Currency          string `json:"currency"`
@@ -56,17 +57,26 @@ type OfferDetails struct {
 	}
 }
 
-func GetOffers(origin, destination FlightDetails) {
+func GetOffers(origin, destination FlightDetails) FlightOffering {
 	d := FlightOffering{
 		Origin:      origin,
 		Destination: destination,
 	}
 
-	reqJson := prepareRequestJson(d)
-	offers := sendAPIRequest(reqJson)
+	reqJSON := prepareRequestJson(d)
+	offers := sendAPIRequest(reqJSON)
 	best := FindCheapest(offers)
 
-	fmt.Printf("origin: %s | destination %s | lowestfare: %d\n", origin.DepartureDate(), destination.DepartureDate(), best)
+	fmt.Printf("origin: %s-%s | destination %s-%s | lowestfare: %.2f\n",
+		origin.AirportCode,
+		origin.DepartureDate(),
+		destination.AirportCode,
+		destination.DepartureDate(),
+		best)
+
+	d.Price = best
+
+	return d
 }
 
 func prepareRequestJson(data FlightOffering) bytes.Buffer {
@@ -102,8 +112,8 @@ func sendAPIRequest(jsonStr bytes.Buffer) OfferDetails {
 	return offerDetails
 }
 
-func FindCheapest(offers OfferDetails) int {
-	lowest := 0
+func FindCheapest(offers OfferDetails) float32 {
+	lowest := float32(0)
 	for _, p := range offers.UpsellProducts {
 		if lowest == 0 {
 			lowest = p.Price.DisplayPrice
