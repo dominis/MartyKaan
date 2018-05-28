@@ -37,6 +37,7 @@ type FlightOffering struct {
 	Origin      FlightDetails
 	Destination FlightDetails
 	Price       float32
+	Currency    string
 }
 
 type OfferDetails struct {
@@ -63,18 +64,29 @@ func GetOffers(origin, destination FlightDetails) FlightOffering {
 		Destination: destination,
 	}
 
-	reqJSON := prepareRequestJson(d)
-	offers := sendAPIRequest(reqJSON)
-	best := FindCheapest(offers)
+	if destination.Date.Sub(origin.Date) < 0 {
+		return d
+	}
 
-	fmt.Printf("origin: %s-%s | destination %s-%s | lowestfare: %.2f\n",
-		origin.AirportCode,
-		origin.DepartureDate(),
-		destination.AirportCode,
-		destination.DepartureDate(),
-		best)
+	var has_results bool
+	d.Price, has_results = DbGetPrice(d)
 
-	d.Price = best
+	if has_results == false { // no price in the database
+		reqJSON := prepareRequestJson(d)
+		offers, _ := sendAPIRequest(reqJSON)
+		d.Price, d.Currency = FindCheapest(offers)
+		// cache result in db
+		DbInsertOffer(d)
+	}
+
+	if d.Currency == "" { // set currency here
+		// ASSUMPTION IS THE MOTHER OF ALL FUCKUPS
+		if d.Price < 10000 {
+			d.Currency = "EUR"
+		} else {
+			d.Currency = "HUF"
+		}
+	}
 
 	return d
 }
@@ -89,31 +101,34 @@ func prepareRequestJson(data FlightOffering) bytes.Buffer {
 	return *buf
 }
 
-func sendAPIRequest(jsonStr bytes.Buffer) OfferDetails {
+func sendAPIRequest(jsonStr bytes.Buffer) (OfferDetails, error) {
 	url := "https://www.klm.com/ams/search-web/api/upsell-products?country=CH&language=en&localeStringDateTime=en&localeStringNumber=de-CH"
 
 	req, err := http.NewRequest("POST", url, &jsonStr)
 	req.Header.Set("Content-Type", "application/json")
 
+	var offerDetails OfferDetails
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		fmt.Errorf("%s", err)
+		return offerDetails, err
 	}
 	defer resp.Body.Close()
 
-	var offerDetails OfferDetails
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&offerDetails)
 	if err != nil {
-		panic(err)
+		fmt.Errorf("%s", err)
+		return offerDetails, err
 	}
 
-	return offerDetails
+	return offerDetails, nil
 }
 
-func FindCheapest(offers OfferDetails) float32 {
+func FindCheapest(offers OfferDetails) (float32, string) {
 	lowest := float32(0)
+	currency := ""
 	for _, p := range offers.UpsellProducts {
 		if lowest == 0 {
 			lowest = p.Price.DisplayPrice
@@ -122,7 +137,9 @@ func FindCheapest(offers OfferDetails) float32 {
 		if lowest > p.Price.DisplayPrice {
 			lowest = p.Price.DisplayPrice
 		}
+
+		currency = p.Price.Currency
 	}
 
-	return lowest
+	return lowest, currency
 }

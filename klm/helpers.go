@@ -7,11 +7,7 @@ func GetDayOfWeek(dayOfWeek time.Weekday, numberOfWeeks int) []time.Time {
 	// first we need to find the next `dayOfWeek`
 	today := time.Now().Weekday()
 	var offset time.Weekday
-	if today != dayOfWeek {
-		offset = 7 - today + dayOfWeek
-	} else {
-		offset = 0
-	}
+	offset = 7 - today + dayOfWeek
 
 	start := time.Now().AddDate(0, 0, int(offset))
 
@@ -21,4 +17,23 @@ func GetDayOfWeek(dayOfWeek time.Weekday, numberOfWeeks int) []time.Time {
 	}
 
 	return res
+}
+
+func GetMultipleDaysOfWeek(daysOfWeek []time.Weekday, numberOfWeeks int) []time.Time {
+	result := make([]time.Time, 0)
+	for _, d := range daysOfWeek {
+		for _, r := range GetDayOfWeek(d, numberOfWeeks) {
+			result = append(result, r)
+		}
+	}
+
+	return result
+}
+
+func RangeSlice(min, max int) []int {
+	a := make([]int, max-min+1)
+	for i := range a {
+		a[i] = min + i
+	}
+	return a
 }

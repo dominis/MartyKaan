@@ -14,7 +14,9 @@ const (
 )
 
 func main() {
-	travelDays := klm.GetDayOfWeek(time.Thursday, 23)
+	klm.Init_db()
+
+	travelDays := klm.GetMultipleDaysOfWeek([]time.Weekday{time.Tuesday, time.Wednesday, time.Thursday}, 23)
 
 	for _, t := range travelDays {
 		origin_offers := make([]klm.FlightOffering, 0)
@@ -43,41 +45,29 @@ func main() {
 				Date:         d,
 			}
 
-			origin_offers = append(origin_offers, klm.GetOffers(origin_bud, destination_ams))
-			destination_offers = append(destination_offers, klm.GetOffers(origin_ams, destination_bud))
-			time.Sleep(1000 * time.Millisecond)
+			o := klm.GetOffers(origin_bud, destination_ams)
+			d := klm.GetOffers(origin_ams, destination_bud)
+
+			origin_offers = append(origin_offers, o)
+			destination_offers = append(destination_offers, d)
+
+			PrintResult(o)
+			PrintResult(d)
 		}
-
-		origin_best := findBest(origin_offers)
-		destination_best := findBest(destination_offers)
-
-		fmt.Println("Best:")
-		fmt.Printf("origin: %s-%s | destination %s-%s | lowestfare: %.2fEUR\n",
-			origin_best.Origin.AirportCode,
-			origin_best.Origin.DepartureDate(),
-			origin_best.Destination.AirportCode,
-			origin_best.Destination.DepartureDate(),
-			origin_best.Price/EurHuf)
-		fmt.Printf("origin: %s-%s | destination %s-%s | lowestfare: %.2fEUR\n",
-			destination_best.Origin.AirportCode,
-			destination_best.Origin.DepartureDate(),
-			destination_best.Destination.AirportCode,
-			destination_best.Destination.DepartureDate(),
-			destination_best.Price)
-		fmt.Printf("SUM: %.2fEUR\n", destination_best.Price+(origin_best.Price/EurHuf))
-
-		fmt.Println("###############")
 	}
 }
 
-func findBest(offers []klm.FlightOffering) klm.FlightOffering {
-	best := klm.FlightOffering{Price: 100000000000}
-	for _, o := range offers {
-		if o.Price < best.Price &&
-			o.Price > 0.0 {
-			best = o
-		}
+func PrintResult(offer klm.FlightOffering) {
+	if offer.Price == 0 {
+		return
 	}
-
-	return best
+	if offer.Currency != "EUR" {
+		offer.Price = offer.Price / EurHuf
+	}
+	fmt.Printf("origin: %s-%s | destination: %s-%s | lowestfare: %.2fEUR\n",
+		offer.Origin.AirportCode,
+		offer.Origin.DepartureDate(),
+		offer.Destination.AirportCode,
+		offer.Destination.DepartureDate(),
+		offer.Price)
 }
