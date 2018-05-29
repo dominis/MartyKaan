@@ -30,6 +30,15 @@ func GetMultipleDaysOfWeek(daysOfWeek []time.Weekday, numberOfWeeks int) []time.
 	return result
 }
 
+func GetNextDays(numberOfDays int) []time.Time {
+	result := make([]time.Time, 0)
+	for i := 0; i < numberOfDays; i++ {
+		t := time.Now().AddDate(0, 0, i)
+		result = append(result, t)
+	}
+	return result
+}
+
 func RangeSlice(min, max int) []int {
 	a := make([]int, max-min+1)
 	for i := range a {
